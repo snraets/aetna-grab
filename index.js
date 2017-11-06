@@ -14,7 +14,6 @@ const jsonfile = require('jsonfile');
 
     await page.evaluate( () => {
 
-
         document.querySelector('#zipCode').value = 20005;
         document.querySelector('#city').value = 'Washington';
         document.querySelector('#stateCode').value = 'DC';
@@ -50,7 +49,11 @@ const jsonfile = require('jsonfile');
         return document.querySelector('.prominent-text.align-center').innerHTML.replace(/\s+/g, '').match(/>\d+</)[0].replace('<','').replace('>','');
     });
 
-    for(let index = 0; index < 1; index++) {
+    let endLoop = parseInt(parseInt(searchResults)/10);
+
+    endLoop = parseInt(searchResults)%10 > 0 ? endLoop + 1 : endLoop;
+
+    for(let index = 0; index < endLoop; index++) {
 
         await page.evaluate( ( ) => {
             
@@ -69,7 +72,7 @@ const jsonfile = require('jsonfile');
 
     await wait(5000);
    
-    page.evaluate( () => {
+    await page.evaluate( () => {
         
         // let names = Array.from(document.querySelectorAll('a'))
         //     .filter( selector => selector.id && /^\d+$/.test(selector.id) )
@@ -82,50 +85,51 @@ const jsonfile = require('jsonfile');
         )
             .map( resultElement => {
 
-                let id = resultElement.querySelector('a').id;
-                let name = resultElement.querySelector('a').innerHTML;
+                let id = '';
+                let name = '';
+                let telephone = '';
+                let address = '';
+                let properties1 = [];
+                let properties2 = [];
+                let properties3 = [];                
 
-                //let telephone = resultElement.querySelector('section > div:nth-child(2) > ul > li:nth-child(1)') 
+                id = resultElement.querySelector('a').id;
+                name = resultElement.querySelector('a').innerHTML;
 
+                telephone =	resultElement.querySelector('ul.pipe-links.pipe-links-stackable > li:nth-child(1)') ? 
+                    resultElement.querySelector('ul.pipe-links.pipe-links-stackable > li:nth-child(1)').innerHTML : 
+                    '';
 
-                // let telephone = resultElement.querySelector('section > div:nth-child(2) > ul > li:nth-child(1)').innerHTML ? 
-                //     resultElement.querySelector('section > div:nth-child(2) > ul > li:nth-child(1)').innerHTML : 
-                    '' ;
+              	address =	resultElement.querySelector('ul.pipe-links.pipe-links-stackable > li:nth-child(2)') ? 
+                    resultElement.querySelector('ul.pipe-links.pipe-links-stackable > li:nth-child(2)').innerHTML : 
+                    '';
 
-                // let address = resultElement.querySelector('section > div:nth-child(2) > ul > li:nth-child(2)').innerHTML ? element.innerHTML : '' ;
-                // let properties1 = [];
-                // let properties2 = [];
-                // let properties3 = [];
+                properties1 = Array.from(
+                    document.querySelectorAll(`#result-detail-doctor-${id} > div:nth-child(1) > div`)
+                )
+                    .filter( element => element.classList.length === 0 )
+                    .map( element => element.innerHTML ? element.innerHTML : '' );
 
-                // properties1 = Array.from(
-                //     document.querySelectorAll(`#result-detail-doctor-${id} > div:nth-child(1) > div`)
-                // )
-                //     .filter( element => element.classList.length === 0 )
-                //     .map( element => element.innerHTML ? element.innerHTML : '' );
-
-                // properties2 = Array.from(
-                //     document.querySelectorAll(`#result-detail-doctor-${id} > div:nth-child(2) > div`)
-                // )
-                //     .filter( element => element.classList.length === 0 )
-                //     .map( element => element.innerHTML ? element.innerHTML : '' );  
+                properties2 = Array.from(
+                    document.querySelectorAll(`#result-detail-doctor-${id} > div:nth-child(2) > div`)
+                )
+                    .filter( element => element.classList.length === 0 )
+                    .map( element => element.innerHTML ? element.innerHTML : '' );  
                     
-                // properties3 = Array.from(
-                //     document.querySelectorAll(`#result-detail-doctor-${id} > div:nth-child(3) > div`)
-                // )
-                //     .filter( element => element.classList.length === 0 )
-                //     .map( element => element.innerHTML ? element.innerHTML : '' );    
+                properties3 = Array.from(
+                    document.querySelectorAll(`#result-detail-doctor-${id} > div:nth-child(3) > div`)
+                )
+                    .filter( element => element.classList.length === 0 )
+                    .map( element => element.innerHTML ? element.innerHTML : '' );    
                     
-                // console.log({id, name, properties1, properties2, properties3});
                     
-               return {id, name, telephone: resultElement.querySelector('section > div:nth-child(2) > ul > li:nth-child(1)')}; //, properties1, properties2, properties3
+               return {id, name, telephone, address, properties1, properties2, properties3}; //, properties1, properties2, properties3
             });
             
-    }).then( results => { 
-        debugger;
-     } )   
-    
-    jsonfile.writeFileSync('./results.json', scrapedResults);
-
+    }).then( scrapedResults => { 
+        jsonfile.writeFileSync('./results.json', scrapedResults);
+     });
+        
     await browser.close();
 
 })()
