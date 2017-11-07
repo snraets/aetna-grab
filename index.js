@@ -8,7 +8,7 @@ const jsonfile = require('jsonfile');
     const page = await browser.newPage().catch(err => console.log('newPage'));
     await page.setViewport({ width: 1800, height: 2000}).catch(err => console.log('viewPort'));
 
-    await page.goto('http://sarhcpdir.cigna.com/nalc', {waitUntil: 'load'}).catch( err => void 0);
+    await page.goto('http://sarhcpdir.cigna.com/nalc', {waitUntil: 'load'}).catch( err => console.log('Initial load regected: ', err));
 
     await wait(5000);
 
@@ -34,13 +34,18 @@ const jsonfile = require('jsonfile');
         // document.getElementById('PfacetSpecialtyCodesPAT').click(); // Acupuncture
         // document.getElementById('PfacetSpecialtyCodesP07').click(); // Primary Care Physician
         
+    }).catch( err => console.log('Setting Radius: ', err) )
+
+    await wait(1000);
+
+    await page.evaluate(() => {
+
         Array.from(
             document.querySelectorAll('.cigna-button.cigna-button-purple-light')
         )
         .filter( element => element.innerHTML === 'Apply' )
         .pop()
         .click();
-
     });
 
     await wait(3000);
@@ -48,6 +53,8 @@ const jsonfile = require('jsonfile');
     let searchResults = await page.evaluate( () => {
         return document.querySelector('.prominent-text.align-center').innerHTML.replace(/\s+/g, '').match(/>\d+</)[0].replace('<','').replace('>','');
     });
+
+    console.log('Retrieving: ', searchResults);
 
     let endLoop = parseInt(parseInt(searchResults)/10);
 
@@ -64,10 +71,12 @@ const jsonfile = require('jsonfile');
             .pop()
             .click();
         });
-
-        console.log('Next Set', index);
     
         await wait(1000); 
+
+        await page.evaluate(() => {
+            return document.querySelectorAll('tr[data-search-result-id]').length
+        }).then((rows) => console.log('Doctors: ', rows, 'Index: ', index))
     }
 
     await wait(5000);
@@ -130,6 +139,8 @@ const jsonfile = require('jsonfile');
         jsonfile.writeFileSync('./results.json', scrapedResults);
      });
         
+    await wait(5000);
+
     await browser.close();
 
 })()
