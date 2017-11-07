@@ -27,7 +27,7 @@ const jsonfile = require('jsonfile');
     await wait(5000);
 
     await page.evaluate( () => {
-        $.filter_helper.setSearchRadius('P', 1); //50
+        $.filter_helper.setSearchRadius('P', 50); //50
 
         // document.getElementById('PfacetGenderCodeM').click();
         // document.getElementById('PfacetGenderCodeF').click();
