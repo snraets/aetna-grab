@@ -9,6 +9,7 @@
   "author": "",
   "license": "ISC",
   "dependencies": {
+    "big-json": "^1.2.0",
     "jsonfile": "^4.0.0",
     "puppeteer": "^0.12.0",
     "wait-then": "^0.1.2"
