@@ -27,7 +27,7 @@ const jsonfile = require('jsonfile');
     await wait(5000);
 
     await page.evaluate( () => {
-        $.filter_helper.setSearchRadius('P', 50); //50
+        $.filter_helper.setSearchRadius('P', 10); //50
 
         // document.getElementById('PfacetGenderCodeM').click();
         // document.getElementById('PfacetGenderCodeF').click();
@@ -36,7 +36,7 @@ const jsonfile = require('jsonfile');
         
     }).catch( err => console.log('Setting Radius: ', err) )
 
-    await wait(1000);
+    await wait(4000);
 
     await page.evaluate(() => {
 
@@ -46,7 +46,7 @@ const jsonfile = require('jsonfile');
         .filter( element => element.innerHTML === 'Apply' )
         .pop()
         .click();
-    });
+    }).catch(err => console.log('Updating Search Terms', err))
 
     await wait(3000);
 
@@ -72,7 +72,7 @@ const jsonfile = require('jsonfile');
             .click();
         });
     
-        await wait(1000); 
+        await wait(3000); 
 
         await page.evaluate(() => {
             return document.querySelectorAll('tr[data-search-result-id]').length
