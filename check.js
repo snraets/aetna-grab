@@ -1,7 +1,7 @@
 const fs = require('fs');
 const json = require('big-json');
 
-const readStream = fs.createReadStream('./results.json');
+const readStream = fs.createReadStream('./results/results.20426.json');
 const parseStream = json.createParseStream();
 
 parseStream.on('data', (results) => {

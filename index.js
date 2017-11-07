@@ -1,146 +1,31 @@
 const puppeteer = require('puppeteer');
+const Rx = require('rxjs/Rx');
 const wait = require('wait-then');
 const jsonfile = require('jsonfile');
+const rp = require('request-promise');
+const zipcodes = require('zipcodes');
+
+const zipList = require('./data/zipCodes').zipCodes;
+const scrape = require('./lib/scrape').scrape;
 
 (async () => {
 
     const browser = await puppeteer.launch({headless: false}).catch(err => console.log('browser'));
     const page = await browser.newPage().catch(err => console.log('newPage'));
+    
     await page.setViewport({ width: 1800, height: 2000}).catch(err => console.log('viewPort'));
 
-    await page.goto('http://sarhcpdir.cigna.com/nalc', {waitUntil: 'load'}).catch( err => console.log('Initial load regected: ', err));
-
-    await wait(5000);
-
-    await page.evaluate( () => {
-
-        document.querySelector('#zipCode').value = 20005;
-        document.querySelector('#city').value = 'Washington';
-        document.querySelector('#stateCode').value = 'DC';
-        document.querySelector('#latitude').value = '38.908229';
-        document.querySelector('#longitude').value = '-77.03053899999999';
-
-        document.querySelector('#searchLocation').value = 'Washington, DC 20005, USA';
-        document.querySelector('#search').click();
-    });
-
-    await wait(5000);
-
-    await page.evaluate( () => {
-        $.filter_helper.setSearchRadius('P', 10); //50
-
-        // document.getElementById('PfacetGenderCodeM').click();
-        // document.getElementById('PfacetGenderCodeF').click();
-        // document.getElementById('PfacetSpecialtyCodesPAT').click(); // Acupuncture
-        // document.getElementById('PfacetSpecialtyCodesP07').click(); // Primary Care Physician
-        
-    }).catch( err => console.log('Setting Radius: ', err) )
-
-    await wait(4000);
-
-    await page.evaluate(() => {
-
-        Array.from(
-            document.querySelectorAll('.cigna-button.cigna-button-purple-light')
-        )
-        .filter( element => element.innerHTML === 'Apply' )
-        .pop()
-        .click();
-    }).catch(err => console.log('Updating Search Terms', err))
-
-    await wait(3000);
-
-    let searchResults = await page.evaluate( () => {
-        return document.querySelector('.prominent-text.align-center').innerHTML.replace(/\s+/g, '').match(/>\d+</)[0].replace('<','').replace('>','');
-    });
-
-    console.log('Retrieving: ', searchResults);
-
-    let endLoop = parseInt(parseInt(searchResults)/10);
-
-    endLoop = parseInt(searchResults)%10 > 0 ? endLoop + 1 : endLoop;
-
-    for(let index = 0; index < endLoop; index++) {
-
-        await page.evaluate( ( ) => {
-            
-            Array.from(
-                document.querySelectorAll('.cigna-button.cigna-button-purple-light')
-            )
-            .filter( element => element.innerHTML === 'More Results' )
-            .pop()
-            .click();
+    Rx.Observable.from(zipList)
+        //.map( zip => zipcodes.lookup(zip) )
+        .concatMap( zip => Rx.Observable.fromPromise(rp(`https://sarhcpdir.cigna.com/hcp-directory-presentation/v2/typeahead/geolocation?query=${zip}&consumerCode=HDC013&limit=15`)) )
+        .map( zipResults => {
+            const parsedResults = (({ latitude, longitude, formattedAddress, zipCode }) => ({ latitude, longitude, formattedAddress, zipCode }))(JSON.parse(zipResults).geolocations[0]);
+            return parsedResults;
+        })
+        .concatMap( zipResults => Rx.Observable.fromPromise(scrape(page, zipResults)) )
+        .subscribe({
+            // next: (zip) => console.log(zip),
+            complete: async () => { await browser.close() }
         });
-    
-        await wait(3000); 
-
-        await page.evaluate(() => {
-            return document.querySelectorAll('tr[data-search-result-id]').length
-        }).then((rows) => console.log('Doctors: ', rows, 'Index: ', index))
-    }
-
-    await wait(5000);
-   
-    await page.evaluate( () => {
-        
-        // let names = Array.from(document.querySelectorAll('a'))
-        //     .filter( selector => selector.id && /^\d+$/.test(selector.id) )
-        //     .map( nameAnchor => nameAnchor.innerHTML );
-
-        // let phones 
-
-        return Array.from(
-            document.querySelectorAll('tr[data-search-result-id]')
-        )
-            .map( resultElement => {
-
-                let id = '';
-                let name = '';
-                let telephone = '';
-                let address = '';
-                let properties1 = [];
-                let properties2 = [];
-                let properties3 = [];                
-
-                id = resultElement.querySelector('a').id;
-                name = resultElement.querySelector('a').innerHTML;
-
-                telephone =	resultElement.querySelector('ul.pipe-links.pipe-links-stackable > li:nth-child(1)') ? 
-                    resultElement.querySelector('ul.pipe-links.pipe-links-stackable > li:nth-child(1)').innerHTML : 
-                    '';
-
-              	address =	resultElement.querySelector('ul.pipe-links.pipe-links-stackable > li:nth-child(2)') ? 
-                    resultElement.querySelector('ul.pipe-links.pipe-links-stackable > li:nth-child(2)').innerHTML : 
-                    '';
-
-                properties1 = Array.from(
-                    document.querySelectorAll(`#result-detail-doctor-${id} > div:nth-child(1) > div`)
-                )
-                    .filter( element => element.classList.length === 0 )
-                    .map( element => element.innerHTML ? element.innerHTML : '' );
-
-                properties2 = Array.from(
-                    document.querySelectorAll(`#result-detail-doctor-${id} > div:nth-child(2) > div`)
-                )
-                    .filter( element => element.classList.length === 0 )
-                    .map( element => element.innerHTML ? element.innerHTML : '' );  
-                    
-                properties3 = Array.from(
-                    document.querySelectorAll(`#result-detail-doctor-${id} > div:nth-child(3) > div`)
-                )
-                    .filter( element => element.classList.length === 0 )
-                    .map( element => element.innerHTML ? element.innerHTML : '' );    
-                    
-                    
-               return {id, name, telephone, address, properties1, properties2, properties3}; //, properties1, properties2, properties3
-            });
-            
-    }).then( scrapedResults => { 
-        jsonfile.writeFileSync('./results.json', scrapedResults);
-     });
-        
-    await wait(5000);
-
-    await browser.close();
 
 })()
