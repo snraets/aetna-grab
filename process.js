@@ -8,9 +8,12 @@ const lsAsync = promisify(ls);
 
 (async () => {
 
+    let results = 0
+
     const resultList =  await lsAsync('results');
 
     Rx.Observable.from(resultList)
+        //.do( file => console.log(file) )
         .concatMap( file => Rx.Observable.fromPromise(getJSON(file)))
         .concatMap( results => Rx.Observable.from(results) )
         .map( doctor => {
@@ -30,9 +33,9 @@ const lsAsync = promisify(ls);
 
             return parsedDoctor;
         })
-        .filter( doctor => doctor.fullName.includes('MD,'))
+        .filter( doctor => doctor.fullName.includes(', MD'))
         .subscribe({
-            next: doctor => void 0// console.log(doctor)
+            next: doctor => { console.log(doctor.fullName, ' ', ++results) }
         });
     
 })()
@@ -53,6 +56,3 @@ function getJSON(file){
 
     return p;
 }
-
-
-
