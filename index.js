@@ -8,7 +8,7 @@ const zipcodes = require('zipcodes');
 const zipList = require('./data/zipCodes').zipCodes;
 const scrape = require('./lib/scrape').scrape;
 
-(async () => {
+(async function(){
 
     const browser = await puppeteer.launch({headless: false}).catch(err => console.log('browser'));
     const page = await browser.newPage().catch(err => console.log('newPage'));
@@ -25,7 +25,8 @@ const scrape = require('./lib/scrape').scrape;
         .concatMap( zipResults => Rx.Observable.fromPromise(scrape(page, zipResults)) )
         .subscribe({
             // next: (zip) => console.log(zip),
-            complete: async () => { await browser.close() }
+            complete: async () => { await browser.close(); },
+            error: async () => { await browser.close(); }
         });
 
 })()
