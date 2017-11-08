@@ -7,8 +7,14 @@
         {
             "type": "node",
             "request": "launch",
-            "name": "Launch Program",
+            "name": "Launch Scrape",
             "program": "${workspaceFolder}\\index.js"
-        }
+        },
+        {
+            "type": "node",
+            "request": "launch",
+            "name": "Launch Process",
+            "program": "${workspaceFolder}\\process.js"
+        }        
     ]
 }
