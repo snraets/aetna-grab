@@ -5,7 +5,7 @@ const jsonfile = require('jsonfile');
 const rp = require('request-promise');
 const zipcodes = require('zipcodes');
 
-const zipList = require('./data/zipCodes').zipCodes;
+const zipList = require('./data/zipCodes').zipCodes1;
 const scrape = require('./lib/scrape').scrape;
 
 (async function(){

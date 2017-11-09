@@ -15,6 +15,12 @@
             "request": "launch",
             "name": "Launch Process",
             "program": "${workspaceFolder}\\process.js"
-        }        
+        },
+        {
+            "type": "node",
+            "request": "launch",
+            "name": "Launch Status",
+            "program": "${workspaceFolder}\\status.js"
+        }                
     ]
 }
